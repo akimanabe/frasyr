@@ -1,23 +1,22 @@
 # ここでは例で使われていたres.pma(pacific maaji)のオブジェクト名をres.madaiに変更しています。
 
-# 関数読み込み（rファイルのパスを入力してください）
+# 準備 ----
 
+# 関数読み込み（rファイルのパスを入力してください）
 source("../future-rvpa/rvpa1.9.2.r")
 source("../future-rvpa/future1.11.r")
 
 
 # ファイル読み込み(お手持ちのファイルのパスを入力してください。)
-
 caa  <- read.csv("/home/rstudio/data/setodai/caa.csv", row.names = 1)
 waa  <- read.csv("/home/rstudio/data/setodai/waa.csv", row.names = 1)
 maa  <- read.csv("/home/rstudio/data/setodai/maa.csv", row.names = 1)
 Mdat <- read.csv("/home/rstudio/data/setodai/M.csv"  , row.names = 1)
-
 dat <- data.handler(caa = caa, waa = waa, maa = maa, M = Mdat)
 
-# 資源量推定(VPA)
+# 資源量推定(VPA) ----
 
-
+## VPA計算
 res.madai <- vpa(dat,
                  fc.year = 2013:2017,
                  rec = NULL,
@@ -29,20 +28,22 @@ res.madai <- vpa(dat,
                  p.init = 0.2,
                  alpha = 1)
 
+## 計算結果のプロット
 plot(res.madai$Fc.at.age, type = "b", xlab = "Age", ylab = "F",
      ylim = c(0, max(res.madai$Fc.at.age)))
 
-# frasyrをインストールしている場合は↓の関数も使えます
+## frasyrをインストールしている場合は↓の関数も使えます（#を外してから読み込んでください）
 # frasyr::plot_vpa(res.madai)
 
 # VPA結果のアウトプット
-
 out.vpa(res.madai)
 
-#再生産関係を仮定しない管理基準値の計算
+#再生産関係を仮定しない管理基準値の計算 ----
 
+# waaやmaaの値の平均値をとる年指定
 byear <- 1977:2017
 
+## 管理基準値の計算 (suppressWarnings関数で警告メッセ―ジを非表示にしています)
 rres.madai <-
   suppressWarnings(
     ref.F(res.madai,
@@ -57,13 +58,12 @@ rres.madai <-
 
 show(rres.madai$summary)
 
-#再生産関係の推定
+#再生産関係の推定 ----
 
 SRdata <- get.SRdata(res.madai)
 head(SRdata)
 
-#モデルのフィット
-
+## モデルのフィット
 ## Hockey-stick
 HS.par <- fit.HS(SRdata,er.log = TRUE,
                  gamma1 = 0.001,
@@ -87,12 +87,14 @@ show(RI.par$pars)
 compare_AIC <- c(HS.par$AICc,BH.par$AICc,RI.par$AICc)
 show(compare_AIC)
 
+## 図作成
 plot.SRdata(SRdata)
 points(HS.par$pred$SSB,HS.par$pred$R,col=2,type="l",lwd=3)
 points(BH.par$pred$SSB,BH.par$pred$R,col=3,type="l",lwd=3)
 points(RI.par$pred$SSB,RI.par$pred$R,col=4,type="l",lwd=3)
 
-# 将来予測
+# 将来予測 ----
+
 fres.HS <- future.vpa(res.madai,
                       multi = 1,
                       nyear = 50,
@@ -127,7 +129,7 @@ MSY.index <-get.perform(fout0 = MSY.HS$fout.msy,
                         longyear = 50,
                         smallcatch = 0.5,
                         shortyear = c(3, 5, 10),
-                        tmp.year = NULL
+                        tmp.year = NULL # 1や2等の数値を入れても動くが、future1.11.rのL4408 でNULLを代入した時の処理が記載されているのでNULLで良いと思います。
 )
 
 show(MSY.index)
